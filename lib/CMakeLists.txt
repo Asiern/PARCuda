@@ -1,3 +1,15 @@
+# CudaTools
+add_library(
+    CudaTools
+    STATIC
+    src/cudaTools.cu
+)
+
+set_target_properties(CudaTools PROPERTIES PUBLIC_HEADER include/cudaTools.cuh)
+target_include_directories(CudaTools PRIVATE include)
+target_include_directories(CudaTools PRIVATE src)
+
+# Matrix lib
 add_library(
     Matrix
     STATIC

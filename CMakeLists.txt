@@ -8,7 +8,7 @@ if(USE_DEBUG)
     add_definitions(-DDEBUG=1)
 endif()
 
-# Include libMatrix
+# Include libraries
 include_directories(lib/include)
 add_subdirectory(lib)
 
