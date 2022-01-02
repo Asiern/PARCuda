@@ -1,3 +1,5 @@
+set(BINARY 01)
+
 set(
     SOURCES 
     01.cuh
@@ -5,4 +7,4 @@ set(
     main.cpp
 )
 
-add_executable(01 ${SOURCES})
+add_executable(${BINARY} ${SOURCES})
