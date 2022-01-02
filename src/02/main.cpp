@@ -1,6 +1,6 @@
 #include "cuda.cuh"
 #include "serial.h"
-#include "../../lib/include/matrix.h"
+#include "matrix.h"
 
 #include <stdlib.h>
 #include <iostream>
@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
     int n = 5, m = 5;
     if (argc == 1)
         std::cout << "No se han pasado argumentos, se utilizarán los valores por defecto para el tamaño de las matrices." << std::endl;
-    else if (argc > 1 && argc < 4)
+    else if (argc == 3)
     {
         n = atoi(argv[1]);
         m = atoi(argv[2]);
