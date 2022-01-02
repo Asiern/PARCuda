@@ -2,7 +2,7 @@
 #include <iostream>
 
 #define TILE_DIM 16
-#define n_threads = 1024
+#define n_threads 1024
 
 __global__ void add_kernel_shared(float *A, float *B, float *out, unsigned int n, unsigned int m)
 {
@@ -84,7 +84,7 @@ int matrix_add_cuda_shared(float *A, float *B, float *out, unsigned int a, unsig
     cudaEventRecord(start);
 #endif
     // TODO threads
-    add_kernel_shared<<<32, 1024>>>(d_A, d_B, d_out, a, b);
+    add_kernel_shared<<<32, n_threads>>>(d_A, d_B, d_out, a, b);
     cudaDeviceSynchronize();
 #ifdef DEBUG
     cudaEventRecord(stop);
