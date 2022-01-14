@@ -8,14 +8,15 @@ int matrix_add(float *A, float *B, float *out, unsigned int a, unsigned int b, u
         return 1;
 #ifdef DEBUG
     //Define timer vars if DEBUG flag found
-    struct timespec t1, t2;
-    clock_gettime(CLOCK_MONOTONIC, &t1);
+    struct timespec start, end;
+    clock_gettime(CLOCK_MONOTONIC, &start);
 #endif
     for (int i = 0; i < a * b; i++)
         out[i] = A[i] + B[i];
 #ifdef DEBUG
-    clock_gettime(CLOCK_MONOTONIC, &t2);
-    std::cout << "Serial add ex time(ms): " << std::fixed << ((t2.tv_nsec - t1.tv_nsec) / 1000000.0 + (t2.tv_sec - t1.tv_sec)) << std::endl;
+    clock_gettime(CLOCK_MONOTONIC, &end);
+    double time = (end.tv_sec - start.tv_sec) * 1000000 + (end.tv_nsec - start.tv_nsec) / 1000;
+    std::cout << "Ejec Add Serial (ms): " << std::fixed << time << std::endl;
 #endif
     return 0;
 }
@@ -27,8 +28,8 @@ int matrix_mul(float *A, float *B, float *out, unsigned int a, unsigned int b, u
 
 #ifdef DEBUG
     //Define timer vars if DEBUG flag found
-    struct timespec t1, t2;
-    clock_gettime(CLOCK_MONOTONIC, &t1);
+    struct timespec start, end;
+    clock_gettime(CLOCK_MONOTONIC, &start);
 #endif
     for (int i = 0; i < a; i++)
     {
@@ -41,8 +42,9 @@ int matrix_mul(float *A, float *B, float *out, unsigned int a, unsigned int b, u
         }
     }
 #ifdef DEBUG
-    clock_gettime(CLOCK_MONOTONIC, &t2);
-    std::cout << "Serial mul ex time(ms): " << std::fixed << ((t2.tv_nsec - t1.tv_nsec) / 1000000.0 + (t2.tv_sec - t1.tv_sec)) << std::endl;
+    clock_gettime(CLOCK_MONOTONIC, &end);
+    double time = (end.tv_sec - start.tv_sec) * 1000000 + (end.tv_nsec - start.tv_nsec) / 1000;
+    std::cout << "Ejec Mul Serial (ms): " << std::fixed << time << std::endl;
 #endif
     return 0;
 }
