@@ -8,11 +8,12 @@ Para configurar el entorno de trabajo es necesario la instalación de las siguie
 
 - cmake
 - build-essential
+- nvidia-cuda-toolkit
 - git (para clonar el repositorio)
 
 Estas herramientas pueden ser instaladas de la siguiente manera (Ubuntu): 
 ```
-sudo apt install build-essential cmake
+sudo apt install build-essential cmake nvidia-cuda-toolkit
 ```
 
 #### Clonar el repositorio
