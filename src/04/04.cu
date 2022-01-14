@@ -2,11 +2,13 @@
 #include <iostream>
 
 #define TILE_DIM 16
-#define n_threads 1024
+#define NTHREADS 1024
 
 __global__ void add_kernel_shared(float *A, float *B, float *out, unsigned int n, unsigned int m)
 {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
+    if (x > n * m)
+        return;
 
     out[x] = A[x] + B[x];
 }
@@ -57,15 +59,23 @@ int matrix_add_cuda_shared(float *A, float *B, float *out, unsigned int a, unsig
 
     // Allocate Memory
     float *d_A;
-    cudaMalloc(&d_A, size);
-    if (cudaMemcpy(d_A, A, size, cudaMemcpyHostToDevice) != cudaSuccess)
+    if (cudaMalloc(&d_A, size) != cudaSuccess)
     {
         std::cout << "Error no se puede reservar memoria (Mat add)" << std::endl;
         return 1;
     }
+    if (cudaMemcpy(d_A, A, size, cudaMemcpyHostToDevice) != cudaSuccess)
+    {
+        std::cout << "Error al copiar matriz a memoria (Mat add)" << std::endl;
+        return 1;
+    }
 
     float *d_B;
-    cudaMalloc(&d_B, size);
+    if (cudaMalloc(&d_B, size) != cudaSuccess)
+    {
+        std::cout << "Error no se puede reservar memoria (Mat add)" << std::endl;
+        return 1;
+    }
     if (cudaMemcpy(d_B, B, size, cudaMemcpyHostToDevice) != cudaSuccess)
     {
         std::cout << "Error al copiar matriz a memoria (Mat add)" << std::endl;
@@ -83,20 +93,24 @@ int matrix_add_cuda_shared(float *A, float *B, float *out, unsigned int a, unsig
 #ifdef DEBUG
     cudaEventRecord(start);
 #endif
-    // TODO threads
-    add_kernel_shared<<<32, n_threads>>>(d_A, d_B, d_out, a, b);
+    // Set grid dimensions
+    dim3 n_blocks = dim3((a * b / NTHREADS) + 1);
+    add_kernel_shared<<<n_blocks, NTHREADS>>>(d_A, d_B, d_out, a, b);
     cudaDeviceSynchronize();
 #ifdef DEBUG
     cudaEventRecord(stop);
     cudaEventSynchronize(stop);
     float time_ms = 0;
     cudaEventElapsedTime(&time_ms, start, stop);
-    std::cout << "Cuda add kernel ex time(ms): " << time_ms << std::endl;
+    std::cout << "Cuda shared add kernel ex time(ms): " << time_ms << std::endl;
 #endif
 
     // Copy results
     if (cudaMemcpy(out, d_out, size, cudaMemcpyDeviceToHost) != cudaSuccess)
+    {
+        std::cout << "Error al copiar matriz a memoria (Mat add)" << std::endl;
         return 1;
+    }
 
     // Free
     cudaFree(d_A);
@@ -123,12 +137,12 @@ int matrix_mul_cuda_shared(float *A, float *B, float *out, unsigned int a, unsig
     // A Matrix
     float *d_A;
     size_t sizeA = sizeof(float) * a * b;
-    if (cudaMalloc(&d_A, sizeA) == cudaErrorMemoryAllocation)
+    if (cudaMalloc(&d_A, sizeA) != cudaSuccess)
     {
         std::cout << "Error no se puede reservar memoria" << std::endl;
         return 1;
     }
-    if (cudaMemcpy(d_A, A, sizeA, cudaMemcpyHostToDevice) > 0)
+    if (cudaMemcpy(d_A, A, sizeA, cudaMemcpyHostToDevice) != cudaSuccess)
     {
         std::cout << "Error al copiar matriz a memoria" << std::endl;
         return 1;
@@ -137,7 +151,7 @@ int matrix_mul_cuda_shared(float *A, float *B, float *out, unsigned int a, unsig
     // B Matrix
     float *d_B;
     size_t sizeB = sizeof(float) * x * y;
-    if (cudaMalloc(&d_B, sizeB) == cudaErrorMemoryAllocation)
+    if (cudaMalloc(&d_B, sizeB) != cudaSuccess)
     {
         std::cout << "Error no se puede reservar memoria" << std::endl;
         return 1;
@@ -151,7 +165,7 @@ int matrix_mul_cuda_shared(float *A, float *B, float *out, unsigned int a, unsig
     // Out Matrix
     float *d_out;
     size_t sizeOut = sizeof(float) * a * y;
-    if (cudaMalloc(&d_out, sizeOut) == cudaErrorMemoryAllocation)
+    if (cudaMalloc(&d_out, sizeOut) != cudaSuccess)
     {
         std::cout << "Error no se puede reservar memoria" << std::endl;
         return 1;
@@ -167,7 +181,6 @@ int matrix_mul_cuda_shared(float *A, float *B, float *out, unsigned int a, unsig
     mul_kernel_shared<<<dimGrid, dimBlock>>>(d_A, d_B, d_out, a, b, x, y);
     cudaDeviceSynchronize();
 #ifdef DEBUG
-    // TODO fix timer
     cudaEventRecord(stop);
     cudaEventSynchronize(stop);
     float time_ms = 0;
@@ -189,12 +202,12 @@ int matrix_mul_cuda_shared(float *A, float *B, float *out, unsigned int a, unsig
 int matrix_mul_add_cuda_shared(float *A, float *B, float *C, float *out, unsigned int a, unsigned int b, unsigned int x, unsigned int y, unsigned int p, unsigned int q)
 {
     float *mul = (float *)malloc(sizeof(float) * a * y);
-    if (matrix_mul_cuda_shared(A, B, mul, a, b, x, y))
+    if (matrix_mul_cuda_shared(A, B, mul, a, b, x, y) > 0)
     {
         free(mul);
         return 1;
     }
-    if (matrix_add_cuda_shared(C, mul, out, p, q, a, y))
+    if (matrix_add_cuda_shared(C, mul, out, p, q, a, y) > 0)
     {
         free(mul);
         return 1;
