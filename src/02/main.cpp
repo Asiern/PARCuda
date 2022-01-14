@@ -15,7 +15,7 @@ int main(int argc, char *argv[])
 {
     int n = 5, m = 5;
     if (argc == 1)
-        std::cout << "No se han pasado argumentos, se utilizarán los valores por defecto para el tamaño de las matrices." << std::endl;
+        std::cout << "No se han pasado argumentos, se utilizarán los valores por defecto para el tamaño de las matrices. (5x5)" << std::endl;
     else if (argc == 3)
     {
         n = atoi(argv[1]);
@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
 
 #ifdef DEBUG
     //Define timer vars if DEBUG flag found
-    struct timespec t1, t2;
+    struct timespec start, end;
 #endif
 
     size_t size = n * m;
@@ -39,30 +39,28 @@ int main(int argc, char *argv[])
 
     // Generar matriz A
     generate(A, n, m);
-    // Copiar matriz a en B
+    // Copiar matriz A en B
     std::memcpy(B, A, size * sizeof(float));
+    // print_matrix(B, n, m);
 
-    std::cout << "\nMatriz generada A" << std::endl;
-    print_matrix(A, n, m);
-    std::cout << "\nMatriz generada B" << std::endl;
-    print_matrix(B, n, m);
+    std::cout << "\nMatriz A generada" << std::endl;
+    std::cout << "Matriz B generada\n"
+              << std::endl;
 
     // Serial
 #ifdef DEBUG
-    clock_gettime(CLOCK_MONOTONIC, &t1);
+    clock_gettime(CLOCK_MONOTONIC, &start);
 #endif
     transpose(A, n, m);
 #ifdef DEBUG
-    clock_gettime(CLOCK_MONOTONIC, &t2);
-    printf("Ejec Transpose Serial (ns): %f\n", round((t2.tv_nsec - t1.tv_nsec) / 1.0e6));
+    clock_gettime(CLOCK_MONOTONIC, &end);
+    double time = (end.tv_sec - start.tv_sec) * 1000000 + (end.tv_nsec - start.tv_nsec) / 1000;
+    std::cout << "Ejec Transpose Serial (ms): " << std::fixed << time << std::endl;
 #endif
-    std::cout << "Imprimiendo resultado de la matriz Serie" << std::endl;
-    print_matrix(A, m, n);
 
     // Cuda
     transpose_cuda(B, n, m);
-    std::cout << "Imprimiendo resultado de la matriz CUDA" << std::endl;
-    print_matrix(B, m, n);
+    // print_matrix(B, n, m);
 
     // Free
     free(A);
