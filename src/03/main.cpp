@@ -1,12 +1,8 @@
 #include "serial.h"
 #include "cuda.cuh"
-#include "../../lib/include/matrix.h"
+#include "matrix.h"
 #include <stdlib.h>
 #include <iostream>
-
-#ifdef DEBUG
-#include <time.h>
-#endif
 
 int main(int argc, char const *argv[])
 {
@@ -16,7 +12,7 @@ int main(int argc, char const *argv[])
         std::cout << "No se han pasado argumentos, se utilizarán los valores por defecto para el tamaño de las matrices." << std::endl;
         std::cout << "a=" << a << "; b=" << b << "; c=" << c << std::endl;
     }
-    else if (argc > 1 && argc < 5)
+    else if (argc == 4)
     {
         a = atoi(argv[1]);
         b = atoi(argv[2]);
@@ -25,14 +21,9 @@ int main(int argc, char const *argv[])
     else
     {
         std::cout << "Introduce las dimensiones de la matriz" << std::endl;
-        std::cout << "./02 a b c" << std::endl;
+        std::cout << "./03 a b c" << std::endl;
         return 1;
     }
-
-#ifdef DEBUG
-    //Define timer vars if DEBUG flag found
-    struct timespec t1, t2;
-#endif
 
     // Reservar memoria para las matrices
     float *A = (float *)malloc(sizeof(float) * a * b);
