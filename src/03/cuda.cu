@@ -11,10 +11,11 @@ __global__ void add_kernel(float *A, float *B, float *out)
 }
 __global__ void mul_kernel(float *A, float *B, float *out, unsigned int a, unsigned int b, unsigned int x, unsigned int y)
 {
-    int row = blockIdx.y * a + threadIdx.y;
-    int col = blockIdx.x * a + threadIdx.x;
+    int pos = blockIdx.x * blockDim.x + threadIdx.x;
+    unsigned int row = pos % b;
+    unsigned int col = pos / b;
 
-    if (row < a && col < a)
+    if (row < a && col < b)
     {
         float sum = 0;
         for (int i = 0; i < a; i++)
@@ -40,15 +41,25 @@ int matrix_add_cuda(float *A, float *B, float *out, unsigned int a, unsigned int
     float *d_A;
     cudaMalloc(&d_A, size);
     if (cudaMemcpy(d_A, A, size, cudaMemcpyHostToDevice) != cudaSuccess)
+    {
+        std::cout << "Error no se puede reservar memoria (Mat add)" << std::endl;
         return 1;
+    }
 
     float *d_B;
     cudaMalloc(&d_B, size);
     if (cudaMemcpy(d_B, B, size, cudaMemcpyHostToDevice) != cudaSuccess)
+    {
+        std::cout << "Error al copiar matriz a memoria (Mat add)" << std::endl;
         return 1;
+    }
 
     float *d_out;
-    cudaMalloc(&d_out, size);
+    if (cudaMalloc(&d_out, size) != cudaSuccess)
+    {
+        std::cout << "Error no se puede reservar memoria (Mat add)" << std::endl;
+        return 1;
+    }
 
     // Call Kernel
 #ifdef DEBUG
@@ -77,31 +88,61 @@ int matrix_add_cuda(float *A, float *B, float *out, unsigned int a, unsigned int
 
 int matrix_mul_cuda(float *A, float *B, float *out, unsigned int a, unsigned int b, unsigned int x, unsigned int y)
 {
+    // Return if matrix dimensions not compatible
     if (b != x)
         return 1;
 
 #ifdef DEBUG
+    // Timer
     cudaEvent_t start, stop;
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
 #endif
 
     // Allocate Memory
+
+    // A Matrix
     float *d_A;
     size_t sizeA = sizeof(float) * a * b;
-    cudaMalloc(&d_A, sizeA);
-    cudaMemcpy(d_A, A, sizeA, cudaMemcpyHostToDevice);
+    if (cudaMalloc(&d_A, sizeA) != cudaSuccess)
+    {
+        std::cout << "Error no se puede reservar memoria" << std::endl;
+        return 1;
+    }
+    if (cudaMemcpy(d_A, A, sizeA, cudaMemcpyHostToDevice) != cudaSuccess)
+    {
+        std::cout << "Error al copiar matriz a memoria" << std::endl;
+        return 1;
+    }
+
+    // B Matrix
     float *d_B;
     size_t sizeB = sizeof(float) * x * y;
-    cudaMalloc(&d_B, sizeB);
-    cudaMemcpy(d_B, B, sizeB, cudaMemcpyHostToDevice);
+    if (cudaMalloc(&d_B, sizeB) == cudaErrorMemoryAllocation)
+    {
+        std::cout << "Error no se puede reservar memoria" << std::endl;
+        return 1;
+    }
+    if (cudaMemcpy(d_B, B, sizeA, cudaMemcpyHostToDevice) > 0)
+    {
+        std::cout << "Error al copiar matriz a memoria" << std::endl;
+        return 1;
+    }
+
+    // Out Matrix
     float *d_out;
     size_t sizeOut = sizeof(float) * a * y;
-    cudaMalloc(&d_out, sizeOut);
+    if (cudaMalloc(&d_out, sizeOut) == cudaErrorMemoryAllocation)
+    {
+        std::cout << "Error no se puede reservar memoria" << std::endl;
+        return 1;
+    }
 
-    dim3 n_blocks = dim3(a * b / n_threads);
+    // Set grid dimensions
+    dim3 n_blocks = dim3((a * b / n_threads) + 1);
 
 #ifdef DEBUG
+    // Start timer
     cudaEventRecord(start);
 #endif
     // Call kernel
